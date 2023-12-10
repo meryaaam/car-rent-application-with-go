@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/google/uuid"
 	"time"
 )
 
@@ -13,7 +12,7 @@ const (
 )
 
 type Car struct {
-	ID           uuid.UUID `json:"id" gorm:"type:varchar(36);primaryKey;default:uuid()"`
+	ID           uint      `json:"id" gorm:"primaryKey"`
 	Model        string    `json:"model"`
 	Registration string    `json:"registration"`
 	Mileage      int       `json:"mileage"`

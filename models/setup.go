@@ -14,7 +14,7 @@ func Connection() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// Auto-migrate the Car model
 	if err := db.AutoMigrate(&Car{}); err != nil {
 		log.Fatalf("Error during auto-migration: %v", err)
 	}

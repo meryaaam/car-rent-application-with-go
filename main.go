@@ -10,6 +10,7 @@ import (
 func main() {
 
 	router := gin.Default()
+
 	models.Connection()
 	models.InitDB()
 	router.GET(
@@ -19,6 +20,16 @@ func main() {
 	router.POST(
 		"/cars",
 		controller.CreateCar,
+	)
+
+	router.POST(
+		"/cars/:registration/rentals",
+		controller.RentCar,
+	)
+
+	router.POST(
+		"/cars/:registration/returns",
+		controller.ReturnCar,
 	)
 
 	port := 9000

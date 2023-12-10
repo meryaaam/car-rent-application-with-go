@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"net/http"
 	"rentCarTest/models"
@@ -60,15 +59,71 @@ func CreateCar(c *gin.Context) {
 	}
 	// Handle the case where registration already exists
 	if registrationExists(input.Registration) {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Registration already exists"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the registration number already exists"})
 		return
 	}
 
 	NewCar := models.Car{Model: input.Model, Registration: input.Registration, Mileage: input.Mileage}
 	models.DB.Create(&NewCar)
-	UUID := uuid.MustParse(NewCar.ID.String())
-	fmt.Println("Car ID:", NewCar.ID)
 
-	c.JSON(http.StatusOK, gin.H{"id": UUID})
+	c.JSON(http.StatusOK, gin.H{"id": NewCar.ID})
 
+}
+
+func RentCar(c *gin.Context) {
+
+	registration := c.Param("registration")
+
+	// Handle the case where registration already exists
+	var car models.Car
+	result := models.DB.Where("registration = ?", registration).First(&car)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Car not found"})
+		return
+	}
+
+	// Check if the car is already rented
+	if car.Status == "rented" {
+		c.JSON(http.StatusConflict, gin.H{"message": "Car is already rented"})
+		return
+	}
+
+	// Mark the car as rented
+	car.Status = "rented"
+	models.DB.Save(&car)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Car rented successfully"})
+}
+
+func ReturnCar(c *gin.Context) {
+	registration := c.Param("registration")
+
+	var Car models.Car
+	// Handle the case where registration already exists
+	result := models.DB.Where("registration = ?", registration).First(&Car)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Car not found"})
+		return
+	}
+	// Handle error if the car is not marked as rented
+	if Car.Status != "rented" {
+		c.JSON(http.StatusConflict, gin.H{"error": "Car is not marked as rented"})
+		return
+	}
+
+	var returnRequest struct {
+		KilometersDriven int `json:"kilometers_driven"`
+	}
+
+	if err := c.ShouldBindJSON(&returnRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update the mileage and status of the car
+	Car.Mileage += returnRequest.KilometersDriven
+	Car.Status = "available"
+	models.DB.Save(&Car)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Car returned successfully"})
 }
