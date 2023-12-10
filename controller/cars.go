@@ -78,13 +78,13 @@ func RentCar(c *gin.Context) {
 	var car models.Car
 	result := models.DB.Where("registration = ?", registration).First(&car)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Car not found"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Car not found"})
 		return
 	}
 
 	// Check if the car is already rented
 	if car.Status == "rented" {
-		c.JSON(http.StatusConflict, gin.H{"message": "Car is already rented"})
+		c.JSON(http.StatusOK, gin.H{"message": "Car is already rented"})
 		return
 	}
 
