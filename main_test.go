@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -114,7 +116,6 @@ func TestRentCar(t *testing.T) {
 
 	r.ServeHTTP(w, req)
 
-	// Check the response status
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	// Check if the car's status has been updated to "rented" in the database
@@ -122,5 +123,77 @@ func TestRentCar(t *testing.T) {
 	models.DB.First(&updatedCar, "registration = ?", "BG0027")
 	assert.Equal(t, models.Rented, updatedCar.Status)
 
-	// Add more assertions as needed
+}
+
+type carTest struct {
+	ID           uint64 `json:"id"`
+	Registration string `json:"registration"`
+	Mileage      int    `json:"mileage"`
+	Status       string `json:"status"`
+}
+
+type returnRequestTest struct {
+	KilometersDriven int `json:"kilometers_driven"`
+}
+
+func TestReturnCar(t *testing.T) {
+	// Initialize a Ginkgo test reporter for Go's testing package
+	gomega.RegisterFailHandler(ginkgo.Fail)
+
+	// Set up a mock server to handle HTTP requests
+	router := gin.Default()
+	router.PUT("/cars/:registration/return", controller.ReturnCar)
+
+	// Define the test cases
+	testCases := []struct {
+		name string
+		test carTest
+	}{
+		{
+			name: "Successfully return a rented car",
+			test: carTest{
+				ID:           1,
+				Registration: "AB12345",
+				Mileage:      5000,
+				Status:       "available",
+			},
+		},
+		{
+			name: "Try to return a car that does not exist",
+			test: carTest{
+				ID:           1,
+				Registration: "CD67890",
+				Mileage:      5000,
+				Status:       "rented",
+			},
+		},
+		{
+			name: "Try to return a car that is not marked as rented",
+			test: carTest{
+				ID:           1,
+				Registration: "EF12345",
+				Mileage:      5000,
+				Status:       "available",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			jsonTest, _ := json.Marshal(returnRequestTest{KilometersDriven: 1000})
+
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("PUT", "/cars/"+tc.test.Registration+"/return", bytes.NewBuffer(jsonTest))
+			router.ServeHTTP(w, req)
+
+			var jsonResponse carTest
+			json.Unmarshal(w.Body.Bytes(), &jsonResponse)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Equal(t, tc.test.ID, jsonResponse.ID)
+			assert.Equal(t, tc.test.Registration, jsonResponse.Registration)
+			assert.Equal(t, tc.test.Mileage+1000, jsonResponse.Mileage)
+			assert.Equal(t, "available", jsonResponse.Status)
+		})
+	}
 }
