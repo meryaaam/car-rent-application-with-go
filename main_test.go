@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"rentCarTest/controller"
@@ -20,12 +19,6 @@ func setupTestDatabase() (*gorm.DB, error) {
 	return gorm.Open(mysql.Open(dsn), &gorm.Config{})
 }
 
-func migrateTestSchema(db *gorm.DB) {
-	// AutoMigrate your models to create the necessary tables
-	if err := db.AutoMigrate(&models.Car{}); err != nil {
-		log.Fatalf("Error during auto-migration: %v", err)
-	}
-}
 func TestConnection(t *testing.T) {
 	// Set up a Gin router
 	r := gin.Default()
@@ -59,63 +52,6 @@ func TestGetCars(t *testing.T) {
 		t.Errorf("Expected status %d; got %d", http.StatusOK, w.Code)
 	}
 }
-
-/*
-func TestCreateCars(t *testing.T) {
-	r := gin.Default()
-	/*
-		testDB, err := setupTestDatabase()
-		if err != nil {
-			t.Fatalf("Failed to set up the test database: %v", err)
-		}
-		r.Use(func(c *gin.Context) {
-			c.Set("db", testDB)
-		})
-		migrateTestSchema(testDB)
-
-		// Inject the test database into the Gin context
-		r.Use(func(c *gin.Context) {
-			c.Set("db", testDB)
-		})
-	models.InitDB()
-	// Define the input payload for creating a new car
-	newCarInput := controller.CreateCarInput{
-		Model:        "Toyota GR 3",
-		Registration: "BG0021",
-		Mileage:      1005,
-	}
-	jsonData, err := json.Marshal(newCarInput)
-	assert.NoError(t, err)
-	req, err := http.NewRequest("POST", "/cars", bytes.NewBuffer(jsonData))
-	assert.NoError(t, err)
-
-	// Set the request header
-	req.Header.Set("Content-Type", "application/json")
-
-	// Create a response recorder to record the response
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
-	controller.CreateCar(c)
-
-	// Check the response status
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status %d; got %d", http.StatusOK, w.Code)
-	}
-	// Perform the request
-	r.ServeHTTP(w, req)
-
-	// Check the response status code
-	assert.Equal(t, http.StatusOK, w.Code)
-	// Parse the response JSON
-	var response map[string]string
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-
-	// Assert that the response contains the car ID
-	assert.NotEmpty(t, response["id"])
-}
-*/
 
 func TestCreateCar(t *testing.T) {
 	models.InitDB()
